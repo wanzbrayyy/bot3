@@ -1,0 +1,29 @@
+<%- include('partials/header', { title: 'Login', user: user }) %>
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card p-4">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4"><i class="fa-solid fa-lock"></i> Login</h2>
+                <% if (error) { %>
+                    <div class="alert alert-danger"><%= error %></div>
+                <% } %>
+                <form action="/login" method="POST">
+                    <div class="mb-3">
+                        <label for="telegramUsername" class="form-label">Username Telegram</label>
+                        <input type="text" class="form-control" id="telegramUsername" name="telegramUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-gradient">Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

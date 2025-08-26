@@ -1,0 +1,18 @@
+<%- include('partials/header', { title: 'Selamat Datang', user: user }) %>
+
+<div class="text-center">
+    <h1 class="display-3 fw-bold">Selamat Datang di <span class="gradient-bg bg-clip-text text-transparent">RED BOT</span></h1>
+    <p class="lead text-white-50 my-4">Platform terintegrasi untuk mengelola dan memonitor bot Telegram Anda.</p>
+    <% if (user) { %>
+        <a href="/dashboard" class="btn btn-gradient btn-lg px-5 py-3">
+            <i class="fa-solid fa-tachometer-alt"></i> Ke Dashboard
+        </a>
+    <% } else { %>
+        <a href="/login" class="btn btn-gradient btn-lg px-5 py-3">
+            <i class="fa-solid fa-sign-in-alt"></i> Login Sekarang
+        </a>
+        <p class="mt-3 text-white-50">Belum punya akun? Daftarkan diri melalui bot Telegram!</p>
+    <% } %>
+</div>
+
+<%- include('partials/footer') %>

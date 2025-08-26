@@ -1,0 +1,36 @@
+<%- include('partials/header', { title: 'Dashboard', user: user }) %>
+
+<h1 class="mb-4">Dashboard</h1>
+<p class="text-white-50 mb-5">Selamat datang kembali, <b><%= user.telegramUsername %></b>!</p>
+
+<div class="row g-4">
+    <div class="col-md-6 col-xl-4">
+        <div class="card p-3 h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-users fa-3x mb-3 text-primary"></i>
+                <h2 class="display-4 fw-bold"><%= stats.totalUsers %></h2>
+                <h5 class="text-white-50">Total Pengguna di Grup</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card p-3 h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-object-group fa-3x mb-3 text-info"></i>
+                <h2 class="display-4 fw-bold"><%= stats.totalGroups %></h2>
+                <h5 class="text-white-50">Total Grup Terdaftar</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card p-3 h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-server fa-3x mb-3 text-warning"></i>
+                <h2 class="display-4 fw-bold"><%= stats.uptime.toFixed(1) %> <small class="fs-4">jam</small></h2>
+                <h5 class="text-white-50">Bot Uptime</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
