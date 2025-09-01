@@ -234,7 +234,7 @@ bot.on('callback_query', async (query) => {
         await bot.editMessageCaption(`👑 <b>Owner Bot</b>\nID: <code>${config.ownerId}</code>\nUsername: @wanzofc`, { chat_id: chatId, message_id: messageId, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'back' }]] } });
         break;
       case 'help':
-        const helpText = `📖 <b>Panduan Bot</b>\n\n<b>Admin Grup:</b>\n/warn [on/off] - Mengaktifkan auto-moderasi\n/ban [reply] - Mute pengguna manual\n/unban [reply] - Unmute pengguna\n/del [reply] - Hapus pesan\n/setwelcome [pesan]\n/setgoodbye [pesan]\n\n<b>Pengguna:</b>\n/start\n/ping\n/rank\n/register\n/login`;
+        const helpText = `📖 <b>Panduan Bot</b>\n\n<b>Admin Grup:</b>\n/warn [on/off]\n/ban [reply]\n/unban [reply]\n/del [reply]\n/setwelcome [pesan]\n/setgoodbye [pesan]\n\n<b>Owner Bot:</b>\n/broadcast [reply ke pesan]\n\n<b>Pengguna & Hiburan:</b>\n/start\n/ping\n/rank\n/about\n/feedback [pesan]\n/meme\n/image [kata kunci]\n\n<b>Akun Web:</b>\n/register\n/login`;
         await bot.editMessageCaption(helpText, { chat_id: chatId, message_id: messageId, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '🔙 Kembali', callback_data: 'back' }]] } });
         break;
       case 'sys_info':
@@ -249,6 +249,31 @@ bot.on('callback_query', async (query) => {
         const response = await axios.get('https://api.quotable.io/random');
         const quote = `"${response.data.content}"\n\n- <b>${response.data.author}</b>`;
         await bot.editMessageCaption(quote, { chat_id: chatId, message_id: messageId, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: '📜 Lagi', callback_data: 'get_quote' }], [{ text: '🔙 Kembali', callback_data: 'entertainment' }]] }});
+        break;
+      case 'get_meme':
+        try {
+            await bot.answerCallbackQuery(query.id, { text: '🔎 Mencari meme baru...' });
+            const memeResponse = await axios.get('https://meme-api.com/gimme');
+            const { url, title, postLink } = memeResponse.data;
+
+            if (url) {
+                await bot.editMessageMedia({ type: 'photo', media: url, caption: `<b>${title}</b>`, parse_mode: 'HTML' }, {
+                    chat_id: chatId,
+                    message_id: messageId,
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: 'Sumber Post', url: postLink }],
+                            [{ text: '😂 Lagi', callback_data: 'get_meme' }]
+                        ]
+                    }
+                });
+            } else {
+                await bot.answerCallbackQuery(query.id, { text: '❌ Gagal mendapatkan meme.', show_alert: true });
+            }
+        } catch (error) {
+            console.error(chalk.red.bold('[Error] Gagal mengambil meme dari API (callback):'), error);
+            await bot.answerCallbackQuery(query.id, { text: '❌ Terjadi kesalahan.', show_alert: true });
+        }
         break;
       case 'back':
         const backText = `
@@ -362,6 +387,32 @@ bot.on('message', async (msg) => {
             }
         }
 
+        if (cmd === 'image') {
+            const query = args.join(' ');
+            if (!query) {
+                return bot.sendMessage(chatId, 'Silakan masukkan kata kunci gambar yang ingin Anda cari. Contoh:\n/image kucing lucu');
+            }
+
+            let searchingMsg;
+            try {
+                searchingMsg = await bot.sendMessage(chatId, `🔎 Mencari gambar dengan kata kunci: <b>${query}</b>...`, { parse_mode: 'HTML' });
+                const imageUrl = `https://source.unsplash.com/random/800x600?${encodeURIComponent(query)}`;
+
+                await bot.sendPhoto(chatId, imageUrl, {
+                    caption: `🖼️ Ini gambar yang saya temukan untuk <b>${query}</b>.`,
+                    parse_mode: 'HTML'
+                });
+
+            } catch (error) {
+                console.error(chalk.red.bold('[Error] Gagal mengambil gambar dari Unsplash:'), error);
+                await bot.sendMessage(chatId, `❌ Maaf, terjadi kesalahan saat mencari gambar untuk "${query}".`);
+            } finally {
+                if (searchingMsg) {
+                    await bot.deleteMessage(chatId, searchingMsg.message_id).catch(() => {});
+                }
+            }
+        }
+
         if (!text.startsWith(config.prefix)) {
             const xpToAdd = Math.floor(Math.random() * 10) + 15;
             await User.findOneAndUpdate({ userId, chatId }, { $inc: { xp: xpToAdd } }, { upsert: true, new: true }).then(user => {
@@ -404,6 +455,114 @@ bot.on('message', async (msg) => {
                 await bot.sendMessage(chatId, `<b>Peringkat Anda</b>\n\n👤 Nama: ${msg.from.first_name}\n🎖️ Level: ${user.level}\n✨ XP: ${user.xp} / ${xpNeeded}`, { parse_mode: 'HTML' });
             } else {
                 await bot.sendMessage(chatId, `Anda belum memiliki peringkat.`);
+            }
+        }
+
+        if (cmd === 'about') {
+            const aboutText = `
+<b>🤖 Tentang Bot Ini</b>
+
+Bot ini adalah <b>${config.botName}</b>, sebuah bot serbaguna yang dirancang untuk membantu mengelola grup dan menyediakan berbagai fitur hiburan serta utilitas.
+
+<b>👑 Owner:</b> @wanzofc
+<b>🔧 Dibuat oleh:</b> WANZOFC
+
+Ketik /help untuk melihat daftar perintah yang tersedia.
+`;
+            bot.sendMessage(chatId, aboutText, { parse_mode: 'HTML' });
+        }
+
+        if (cmd === 'feedback') {
+            const feedbackText = args.join(' ');
+            if (!feedbackText) {
+                return bot.sendMessage(chatId, 'Silakan tulis pesan feedback Anda setelah perintah. Contoh:\n/feedback Saya suka bot ini!');
+            }
+
+            const feedbackMessage = `
+📝 <b>Feedback Baru Diterima!</b>
+
+<b>Dari:</b> ${msg.from.first_name} (@${msg.from.username || 'tidak ada'})
+<b>ID Pengguna:</b> <code>${msg.from.id}</code>
+<b>Pesan:</b>
+<pre>${feedbackText}</pre>
+`;
+
+            try {
+                await bot.sendMessage(config.ownerId, feedbackMessage, { parse_mode: 'HTML' });
+                bot.sendMessage(chatId, '✅ Terima kasih! Feedback Anda telah berhasil dikirim ke owner.');
+            } catch (error) {
+                console.error(chalk.red.bold(`[Error] Gagal mengirim feedback ke owner:`), error);
+                bot.sendMessage(chatId, '❌ Maaf, terjadi kesalahan saat mengirim feedback.');
+            }
+        }
+
+        if (cmd === 'broadcast') {
+            if (msg.from.id !== config.ownerId) {
+                return bot.sendMessage(chatId, '❌ Perintah ini hanya untuk owner.');
+            }
+            if (!msg.reply_to_message) {
+                return bot.sendMessage(chatId, '⚠️ Silakan balas pesan yang ingin Anda siarkan, lalu ketik /broadcast.');
+            }
+
+            try {
+                const allUsers = await User.distinct('userId');
+                if (!allUsers || allUsers.length === 0) {
+                    return bot.sendMessage(chatId, 'Tidak ada pengguna yang terdaftar untuk menerima siaran.');
+                }
+
+                bot.sendMessage(chatId, `🚀 Memulai siaran ke ${allUsers.length} pengguna...`);
+
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (const userId of allUsers) {
+                    try {
+                        await bot.forwardMessage(userId, msg.chat.id, msg.reply_to_message.message_id);
+                        successCount++;
+                        await new Promise(resolve => setTimeout(resolve, 100)); // Delay 100ms
+                    } catch (e) {
+                        // Bot diblokir oleh pengguna atau error lain
+                        console.error(`Gagal mengirim siaran ke ${userId}:`, e.message);
+                        errorCount++;
+                    }
+                }
+
+                await bot.sendMessage(chatId, `✅ Siaran selesai.\n\nBerhasil terkirim: ${successCount}\nGagal: ${errorCount}`);
+
+            } catch (error) {
+                console.error(chalk.red.bold('[Error] Gagal melakukan broadcast:'), error);
+                bot.sendMessage(chatId, '❌ Terjadi kesalahan saat memproses siaran.');
+            }
+        }
+
+        if (cmd === 'meme') {
+            let searchingMsg;
+            try {
+                searchingMsg = await bot.sendMessage(chatId, '🔎 Mencari meme untukmu...');
+                const response = await axios.get('https://meme-api.com/gimme');
+                const { url, title, postLink } = response.data;
+
+                if (url) {
+                    await bot.sendPhoto(chatId, url, {
+                        caption: `<b>${title}</b>`,
+                        parse_mode: 'HTML',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: 'Sumber Post', url: postLink }],
+                                [{ text: '😂 Lagi', callback_data: 'get_meme' }]
+                            ]
+                        }
+                    });
+                } else {
+                    await bot.sendMessage(chatId, '❌ Maaf, gagal mendapatkan meme saat ini. Coba lagi nanti.');
+                }
+            } catch (error) {
+                console.error(chalk.red.bold('[Error] Gagal mengambil meme dari API:'), error);
+                await bot.sendMessage(chatId, '❌ Maaf, terjadi kesalahan saat mengambil meme.');
+            } finally {
+                if (searchingMsg) {
+                    await bot.deleteMessage(chatId, searchingMsg.message_id).catch(() => {});
+                }
             }
         }
     } catch (error) {
